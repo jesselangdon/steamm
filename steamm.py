@@ -34,7 +34,7 @@ data_product = raw_input('Enter the MODIS Data Product ID: ', )
 
 process_yr_str = raw_input('Enter year to be processed (i.e. 2015): ', )
 
-print('Enter the MODIS Swath IDs to process (just enter this for now: h09v04,h10v04) -')
+print('Enter the MODIS Swath IDs to process (multiple tiles: h09v04,h10v04) -')
 swath_id_raw = raw_input('     Swath ID: ')
 # temporary solution
 swath_id = swath_id_raw.split(',')
@@ -67,17 +67,17 @@ def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_st
     hdf_filepath_list, hdf_file_list = util.get_hdf_filepaths(dir_hdf)
     hdf_file_array = util.build_file_array(hdf_file_list)
     hdf_date_list = util.get_all_file_dates(hdf_file_array)
-    hdf_dates = util.find_dup_file_dates(hdf_date_list)
+    hdf_dates = util.find_dup_file_dates(hdf_date_list, swath_id)
 
     # File conversion
     poly_wkt = util.get_proj(geo_rca)
     bbox_list = util.get_bbox(geo_rca)
-    geotiff_list = util.convert_hdf(proj_dir, dir_list, hdf_filepath_list, hdf_file_list)
+    geotiff_list, xres, yres = util.convert_hdf(proj_dir, dir_list, hdf_filepath_list, hdf_file_list)
     mosaic_io_array = util.build_mosaic_io_array(geotiff_list, hdf_dates)
     modis_wkt = util.get_modis_wkt("steamm_v01.py")
-    vrt_list = util.mosaic_vrt(mosaic_io_array, proj_dir, dir_list, modis_wkt)
-    reprj_list = util.reproject_rasters(vrt_list, proj_dir, dir_list, modis_wkt, poly_wkt, bbox_list)
-    csv_list = util.LST_to_csv(reprj_list,proj_dir,dir_list)
+    vrt_list = util.convert_to_vrt(mosaic_io_array, swath_id, proj_dir, dir_list, modis_wkt)
+    reprj_list = util.reproject_rasters(vrt_list, proj_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres)
+    csv_list = util.LST_to_csv(reprj_list, proj_dir, dir_list)
     acq_date_list = util.build_acq_date_list(csv_list)
     LST_csv = util.build_interpl_table(acq_date_list, proj_dir, dir_list)
     print LST_csv
