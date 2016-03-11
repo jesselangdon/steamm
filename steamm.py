@@ -12,7 +12,6 @@
 # import modules
 import steamm_util as util
 
-
 # introduction (temporary)
 print('\n')
 print('Stream Temperature Automated Modeler using MODIS (STeAMM)')
@@ -23,7 +22,7 @@ print('line interface.  The final version will be in the form a QGIS Plugin.')
 print('----------------------------------------------------------------------')
 print('\n')
 
-
+"""
 ## input variables
 proj_dir = raw_input('Enter a new project directory path: ', )
 
@@ -45,7 +44,7 @@ doy_end_str = raw_input('     End of year: ')
 
 print('Please select a drainage polygon shapefile to summarize values (i.e. watersheds, RCAs, etc.): ')
 geo_rca = raw_input('Drainage polygon shapefile (enter full path): ')
-
+"""
 
 # do the work
 def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_str, doy_end_str, platform = 'MOLT'):
@@ -74,7 +73,7 @@ def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_st
     bbox_list = util.get_bbox(geo_rca)
     geotiff_list, xres, yres = util.convert_hdf(proj_dir, dir_list, hdf_filepath_list, hdf_file_list)
     mosaic_io_array = util.build_mosaic_io_array(geotiff_list, hdf_dates)
-    modis_wkt = util.get_modis_wkt("steamm_v01.py")
+    modis_wkt = util.get_modis_wkt("steamm.py")
     vrt_list = util.convert_to_vrt(mosaic_io_array, swath_id, proj_dir, dir_list, modis_wkt)
     reprj_list = util.reproject_rasters(vrt_list, proj_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres)
     csv_list = util.LST_to_csv(reprj_list, proj_dir, dir_list)
@@ -83,13 +82,14 @@ def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_st
     print LST_csv
 
 # testing variables
-"""
-proj_dir = r'C:\dev\steamm_working\testing\test20160301'
-data_product = r'MOD11A1.005'
-process_yr = [2015]
-swath_id = ['h09v04', 'h10v04']
-geo_rca = r'C:\dev\steamm_working\testing\huc6_test.shp'
-"""
+proj_dir = r'C:\dev\steamm_working\testing\test20160311'
+data_product = r'MOD11A2.005'
+process_yr_str = '2014'
+swath_id = ['h08v05']
+geo_rca = r'C:\dev\steamm_working\testing\BNG_outline.shp'
+doy_start_str = '1'
+doy_end_str = '5'
+
 
 # call the main function, run the program
 if __name__ == '__main__':

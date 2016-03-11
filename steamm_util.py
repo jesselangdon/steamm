@@ -169,8 +169,8 @@ def find_dup_file_dates(hdf_date_list, swath_id):
 # --------------------
 # class convertLST
 def convert_hdf(input_dir, dir_list, hdf_filepath_list, hdf_file_list):
-    global src_xref
-    global src_yref
+    global src_xres
+    global src_yres
     """Converts MODIS HDF files to a geotiff format."""
     print "Converting MODIS HDF files to geotiff format..."
     out_format = 'GTiff'
@@ -220,7 +220,8 @@ def get_proj(in_poly):
     open_poly = driver.Open(in_poly)
     lyr = open_poly.GetLayer()
     spatialRef = lyr.GetSpatialRef()
-    poly_wkt = spatialRef.ExportToWkt()
+    poly_proj4 = spatialRef.ExportToProj4()
+    poly_wkt = '"' + poly_proj4 + '"'
     return poly_wkt
 
 
@@ -287,10 +288,10 @@ def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbo
     out_reprj_list = []
     for in_vrt in in_vrt_list:
         out_file = '%s_%s.%s' % (in_vrt, "reprj", 'tif')
-        expr = 'gdalwarp -s_srs %s -t_srs %s -tr %f %f -tap -wo %s -wo %s -r %s -dstnodata %d %s %s' % \
-               (modis_wkt, poly_wkt, xres, yres, "SAMPLE_GRID=YES", "SAMPLE_STEPS=100", "bilinear", 0, in_vrt, out_file)
-        """expr = 'gdalwarp -s_srs %s -t_srs %s -te %f %f %f %f -tr %f %f -tap -r %s -dstnodata %d %s %s' % \
-               (modis_wkt, poly_wkt, xmin, ymin, xmax, ymax, xres, yres, "bilinear", 0, in_vrt, out_file)"""
+        expr = 'gdalwarp -overwrite -t_srs %s -tr %f %f -r %s -of %s -dstnodata %d %s %s' % \
+               (poly_wkt, xres, yres, 'bilinear', 'GTiff', 0, in_vrt, out_file)
+        """expr = 'gdalwarp -s_srs %s -t_srs %s -te %f %f %f %f -tr %f %f -r %s -of %s -dstnodata %d %s %s' % \
+               (modis_wkt, poly_wkt, xmin, ymin, xmax, ymax, xres, yres, 'bilinear', 'GTiff', 0, in_vrt, out_file)"""
         os.system(expr)
         out_reprj_list.append(out_file)
     return out_reprj_list
