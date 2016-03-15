@@ -278,7 +278,7 @@ def get_bbox(in_poly):
     return bbox_list
 
 
-def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres):
+def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres, in_ply):
     """Re-projects VRT mosaics to same projection as drainage polygons, then clips extent to polygon envelope."""
     print "Reprojecting VRT mosaics..."
     xmin = bbox_list[0]
@@ -288,10 +288,12 @@ def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbo
     out_reprj_list = []
     for in_vrt in in_vrt_list:
         out_file = '%s_%s.%s' % (in_vrt, "reprj", 'tif')
-        expr = 'gdalwarp -overwrite -t_srs %s -tr %f %f -r %s -of %s -dstnodata %d %s %s' % \
-               (poly_wkt, xres, yres, 'bilinear', 'GTiff', 0, in_vrt, out_file)
-        """expr = 'gdalwarp -s_srs %s -t_srs %s -te %f %f %f %f -tr %f %f -r %s -of %s -dstnodata %d %s %s' % \
-               (modis_wkt, poly_wkt, xmin, ymin, xmax, ymax, xres, yres, 'bilinear', 'GTiff', 0, in_vrt, out_file)"""
+        expr = 'gdalwarp -overwrite -t_srs %s -tr %f %f -r %s -of %s -dstnodata %d -cutline %s %s %s' % \
+               (poly_wkt, xres, yres, 'bilinear', 'GTiff', -999, in_ply, in_vrt, out_file)
+        """
+        expr = 'gdalwarp -overwrite -t_srs %s -te %f %f %f %f -tr %f %f -r %s -of %s -dstnodata %d -cutline %s %s %s' % \
+               (poly_wkt, xmin, ymin, xmax, ymax, xres, yres, 'bilinear', 'GTiff', 0, in_ply, in_vrt, out_file)
+        """
         os.system(expr)
         out_reprj_list.append(out_file)
     return out_reprj_list
@@ -323,9 +325,9 @@ def LST_to_csv(in_reprj_list, input_dir, dir_list):
             all_rows = []
             all_rows.insert(0, ["UID", "X", "Y", str(acq_date)])
             row = next(reader)
-            all_rows.append([str(0)] + row)
             for i, row in enumerate(reader):
-                all_rows.append([str(i + 1)] + row)
+                if row[2] != '-999':
+                    all_rows.append([str(i + 1)] + row)
             writer.writerows(all_rows)
         out_csv_list.append(csv_filename)
     return out_csv_list
