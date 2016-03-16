@@ -4,12 +4,13 @@
 #
 # Author:      Jesse Langdon
 #
-# Last Updated:     01/21/2016
+# Last Updated:     03/15/2016
 # Copyright:   (c) jlangdon 2016
-# Licence:     <your licence>
+# Licence:      FreeBSD License
 #-------------------------------------------------------------------------------
 
 # import modules
+import sys
 import steamm_util as util
 
 # introduction (temporary)
@@ -24,30 +25,48 @@ print('\n')
 
 
 ## input variables
-proj_dir = raw_input('Enter a new project directory path: ', )
+print('Enter the name of a new project directory, including the full filepath. STeAMM will ')
+print('create a new directory and subdirectory structure, which stores intermediate files')
+print('and outputs from the tool.')
+proj_dir = raw_input('New project directory filepath and name: ', )
 
+print('\n')
 print('Select a MODIS Data Product by entering the product ID (i.e. MOD11A1.005) -')
 print('     MOD11A1.005 = Land Surface Temperature/Emissivity Daily L3 Global 1km')
 print('     MOD11A2.005 = Land Surface Temperature/Emissivity 8-Day L3 Global 1km')
 data_product = raw_input('Enter the MODIS Data Product ID: ', )
 
+print('\n')
 process_yr_str = raw_input('Enter year to be processed (i.e. 2015): ', )
 
+print('\n')
 print('Enter the MODIS Swath IDs to process (multiple tiles: h09v04,h10v04) -')
 swath_id_raw = raw_input('     Swath ID: ')
 # temporary solution
 swath_id = swath_id_raw.split(',')
 
+print('\n')
 print('Please select beginning and end dates, in julian day format (i.e. 1, 365 -')
 doy_start_str = raw_input('     Beginning of year: ')
 doy_end_str = raw_input('     End of year: ')
 
+print('\n')
 print('Please select a drainage polygon shapefile to summarize values (i.e. watersheds, RCAs, etc.): ')
 geo_rca = raw_input('Drainage polygon shapefile (enter full path): ')
 
 
 # do the work
 def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_str, doy_end_str, platform = 'MOLT'):
+
+    # Collect inputs into a list for log file
+    arg_list = []
+    arg_list.append(proj_dir)
+    arg_list.append(data_product)
+    arg_list.append(process_yr_str)
+    arg_list.append(str(swath_id))
+    arg_list.append(geo_rca)
+    arg_list.append(doy_start_str)
+    arg_list.append(doy_end_str)
 
     # Temporary variable conversion
     process_yr = [int(process_yr_str)]
@@ -59,6 +78,7 @@ def main(proj_dir, data_product, process_yr_str, swath_id, geo_rca, doy_start_st
     proj_dir_list = util.create_proj_dir_list(proj_dir, dir_list, source_subdir_list, products_subdir_list)
     util.create_new_dir(proj_dir, dir_list, source_subdir_list, products_subdir_list)
     util.create_year_folders(process_yr, proj_dir, dir_list, source_subdir_list)
+    util.log_inputs(proj_dir, arg_list)
 
     # Build tables for HDF files
     dir_hdf = '%s\\%s\\%s\\%s' % (proj_dir, dir_list[0], source_subdir_list[0], process_yr[0])

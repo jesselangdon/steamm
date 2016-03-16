@@ -21,6 +21,8 @@
 # Copyright:    (c) South Fork Research, Inc. 2016
 #
 # Licence:      FreeBSD License
+#
+# Version:      0.2
 #-------------------------------------------------------------------------------------
 
 """STeAMM (Stream Temperature Automated Modeler using MODIS) is a QGIS Plugin that
@@ -32,6 +34,7 @@ steamm.py and the form.ui PyQT form."""
 
 # import modules
 import os
+import shutil
 import get_modis as gm
 import gdal
 import gdalconst
@@ -69,20 +72,22 @@ def create_new_dir(input_dir, dir_list, source_subdir_list, products_subdir_list
     """Create new project directory using STeAMM project directory schema."""
     if not os.path.exists(input_dir):
         os.makedirs(input_dir)
-        # create top level directories
-        for d in dir_list:
-            os.makedirs(os.path.join(input_dir, d))
-        # create sub-directories for 1source_data folder
-        for s in source_subdir_list:
-            dir_1source = input_dir + "\\" + dir_list[0]
-            os.makedirs(os.path.join(dir_1source, s))
-        # create sub-directories for 3products folder
-        for p in products_subdir_list:
-            dir_3products = input_dir + "\\" + dir_list[2]
-            os.makedirs(os.path.join(dir_3products, p))
         print "Project directory created..."
     else:
-        print "WARNING: The directory already exists!"
+        shutil.rmtree(input_dir)
+        os.makedirs(input_dir)
+        print "Project directory already exists! Overwriting..."
+        # create top level directories
+    for d in dir_list:
+        os.makedirs(os.path.join(input_dir, d))
+    # create sub-directories for 1source_data folder
+    for s in source_subdir_list:
+        dir_1source = input_dir + "\\" + dir_list[0]
+        os.makedirs(os.path.join(dir_1source, s))
+    # create sub-directories for 3products folder
+    for p in products_subdir_list:
+        dir_3products = input_dir + "\\" + dir_list[2]
+        os.makedirs(os.path.join(dir_3products, p))
     return
 
 
@@ -109,6 +114,14 @@ def create_year_folders(year_list, input_dir, dir_list, source_subdir_list):
     subdir_hdf = input_dir + "\\" + dir_list[0] + "\\" + source_subdir_list[0]
     for y in year_list:
         os.makedirs(os.path.join(subdir_hdf, str(y)))
+    return
+
+
+def log_inputs(proj_dir, arg_list):
+    logfile_path = '%s\\%s' % (proj_dir, "logfile.txt")
+    logfile = open(logfile_path, "w")
+    logfile.write("\n".join(arg_list))
+    logfile.close()
     return
 
 
