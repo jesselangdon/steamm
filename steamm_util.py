@@ -22,7 +22,7 @@
 #
 # Licence:      FreeBSD License
 #
-# Version:      0.2
+# Version:      0.3
 #-------------------------------------------------------------------------------------
 
 """STeAMM (Stream Temperature Automated Modeler using MODIS) is a QGIS Plugin that
@@ -267,10 +267,10 @@ def convert_to_vrt(mosaic_io_array, swath_id, input_dir, dir_list, modis_wkt):
         if len(swath_id) > 1: # if more than one geotiff in list, mosaic into a vrt file
             in_rasters = ' '.join(row[0:2])
             out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[2], "vrt")
-            expr = 'gdalbuildvrt -a_srs %s %s %s' % (modis_wkt, out_vrt, in_rasters)
+            expr = 'gdalbuildvrt -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, out_vrt, in_rasters)
         else: # otherwise, just convert the geotiff to a vrt file
             out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[1], "vrt")
-            expr = 'gdal_translate -a_srs %s %s %s' % (modis_wkt, row[0], out_vrt)
+            expr = 'gdal_translate -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, row[0], out_vrt)
         os.system(expr)
         out_vrt_list.append(out_vrt)
     return out_vrt_list
@@ -301,8 +301,8 @@ def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbo
     out_reprj_list = []
     for in_vrt in in_vrt_list:
         out_file = '%s_%s.%s' % (in_vrt, "reprj", 'tif')
-        expr = 'gdalwarp -overwrite -t_srs %s -tr %f %f -r %s -of %s -dstnodata %d -cutline %s %s %s' % \
-               (poly_wkt, xres, yres, 'bilinear', 'GTiff', -999, in_ply, in_vrt, out_file)
+        expr = 'gdalwarp -overwrite -t_srs %s -tr %f %f -r %s -of %s -dstnodata %d -cutline %s -cblend %d %s %s' % \
+               (poly_wkt, xres, yres, 'bilinear', 'GTiff', -999, in_ply, 5, in_vrt, out_file)
         """
         expr = 'gdalwarp -overwrite -t_srs %s -te %f %f %f %f -tr %f %f -r %s -of %s -dstnodata %d -cutline %s %s %s' % \
                (poly_wkt, xmin, ymin, xmax, ymax, xres, yres, 'bilinear', 'GTiff', 0, in_ply, in_vrt, out_file)
