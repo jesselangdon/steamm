@@ -267,7 +267,7 @@ def convert_to_vrt(mosaic_io_array, swath_id, input_dir, dir_list, modis_wkt):
         if len(swath_id) > 1: # if more than one geotiff in list, mosaic into a vrt file
             in_rasters = ' '.join(row[0:2])
             out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[2], "vrt")
-            expr = 'gdalbuildvrt -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, out_vrt, in_rasters)
+            expr = 'gdalbuildvrt -a_srs %s %s %s' % (modis_wkt, out_vrt, in_rasters)
         else: # otherwise, just convert the geotiff to a vrt file
             out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[1], "vrt")
             expr = 'gdal_translate -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, row[0], out_vrt)
