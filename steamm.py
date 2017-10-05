@@ -31,6 +31,8 @@ from dialog_predict import PredictDialog
 import os
 import os.path
 
+# TODO refactor to include Get MODIS Data and Preprocess MODIS Data tools.
+
 # Import the preprocessing module
 import get_swaths.preprocess as process
 
@@ -68,6 +70,7 @@ class STeAMM:
                 QCoreApplication.installTranslator(self.translator)
 
         # Create the dialog (after translation) and keep reference
+        #TODO add entry for 'Get MODIS Data' tool
         self.dlg1 = ProcessDialog()
         self.dlg2 = PredictDialog()
 
@@ -77,6 +80,7 @@ class STeAMM:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'STeAMM')
         self.toolbar.setObjectName(u'STeAMM')
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -167,8 +171,11 @@ class STeAMM:
 
         return action
 
+
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
+
+        # TODO Change to "Get MODIS Data" and "Preprocess MODIS Data" tools
 
         icon_path1 = ':/plugins/STeAMM/icon_process.png'
         icon_path2 = ':/plugins/STeAMM/icon_predict.png'
@@ -195,6 +202,7 @@ class STeAMM:
         # remove the toolbar
         del self.toolbar
 
+    #TODO add get Get MODIS Data tool run method here
 
     def run1(self):
         """Run method that performs all the real work"""
@@ -204,6 +212,7 @@ class STeAMM:
             process.main()
             #process.main(data_dir, data_product, process_yr, swath_id, geo_rca, doy_start_str, doy_end_str, username, password)
         pass
+
 
     def run2(self):
         """Run method for the Predict Temperature tool."""
