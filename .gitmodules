@@ -1,0 +1,3 @@
+[submodule "STeAMM/externals/get_modis"]
+	path = STeAMM/externals/get_modis
+	url = https://github.com/jgomezdans/get_modis.git
