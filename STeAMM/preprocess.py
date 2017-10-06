@@ -1,9 +1,9 @@
 #-------------------------------------------------------------------------------
 # Name:         preprocess.py
 #
-# Summary:      The modis_preprocess module allows the user to convert HDF files to a geotiff format.
-#               The files are then mosaicked, reprojected and clipped based on a user-supplied polygon
-#               dataset.
+# Summary:      The preprocess module allows the user to convert downloaded HDF files to a geotiff
+#               format. The files are then mosaicked, reprojected, and finally clipped based on a
+#               user-supplied polygon shapefile dataset.
 #
 # Project:      Stream Temperature Automated Modeler using MODIS (STeAMM)
 #
@@ -25,9 +25,15 @@ import os
 import csv
 import gdal
 import gdalconst
-import get_swaths as gs
+import ogr
+
+
+# Drainage polygon shapefile to summarize values (i.e. watersheds, RCAs, etc.): ')
+geo_rca = ""
+
 
 def convert_hdf(proj_dir, dir_list, hdf_filepath_list, hdf_filename_list):
+    """Converts downloaded HDF file into geotiff file format."""
     global src_xres
     global src_yres
     geotiff_list = []
@@ -70,6 +76,47 @@ def convert_hdf(proj_dir, dir_list, hdf_filepath_list, hdf_filename_list):
             geotiff_list.append(out_file)
 
     return geotiff_list, src_xres, src_yres
+
+
+def build_mosaic_io_array(geotiff_list, hdf_dates):
+    """Builds an array with each list item consisting of 1) file names with duplicate name, and 2) shared collection date."""
+    print "Building input/output array from mosaic files..."
+    mosaic_io_array = []
+    for date in hdf_dates:
+        row = [i for i in geotiff_list if date in i]
+        row.append(date)
+        mosaic_io_array.append(row)
+    return mosaic_io_array
+
+
+def convert_to_vrt(mosaic_io_array, swath_id, input_dir, dir_list, modis_wkt):
+    """Generates mosaics as GDAL VRT files for MODIS tiles collected on the same day."""
+    print "Generating GDAL VRT files from geotiffs..."
+    out_vrt_list = []
+    # iterate through list of geotiff file names
+    for row in mosaic_io_array:
+        if len(swath_id) > 1: # if more than one geotiff in list, mosaic into a vrt file
+            in_rasters = ' '.join(row[0:2])
+            out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[2], "vrt")
+            expr = 'gdalbuildvrt -a_srs %s %s %s' % (modis_wkt, out_vrt, in_rasters)
+        else: # otherwise, just convert the geotiff to a vrt file
+            out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[1], "vrt")
+            expr = 'gdal_translate -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, row[0], out_vrt)
+        os.system(expr)
+        out_vrt_list.append(out_vrt)
+    return out_vrt_list
+
+
+def get_poly_wkt(in_poly):
+    """Obtain the projection of the drainage polygon dataset as a WKT projection file."""
+    print "Getting projection of drainage polygon dataset..."
+    driver = ogr.GetDriverByName('ESRI Shapefile')
+    open_poly = driver.Open(in_poly)
+    lyr = open_poly.GetLayer()
+    spatialRef = lyr.GetSpatialRef()
+    poly_proj4 = spatialRef.ExportToProj4()
+    poly_wkt = '"' + poly_proj4 + '"'
+    return poly_wkt
 
 
 def reproject_rasters(in_vrt_list, input_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres, in_ply):
@@ -176,5 +223,39 @@ def build_interpl_table(acq_date_list, input_dir, dir_list):
     return out_csv
 
 
+def get_modis_wkt(steamm_script):
+    """Returns the filepath to the MODIS Sin WKT projection file"""
+    print "Finding the file path to the MODIS WKT projection file..."
+    steamm_path = os.path.abspath(steamm_script)
+    steamm_dir = os.path.dirname(steamm_path)
+    modis_wkt_filepath = os.path.join(steamm_dir, "MODIS_sin.wkt")
+    return modis_wkt_filepath
+
+
+def get_bbox(in_poly):
+    """Gets the extent envelope values of drainage polygons."""
+    print "Calculating the extent envelope vaues of drainage polygon dataset..."
+    bbox_list = []
+    in_driver = ogr.GetDriverByName("ESRI Shapefile")
+    in_ds = in_driver.Open(in_poly, 0)
+    in_lyr = in_ds.GetLayer()
+    (xmin, xmax, ymin, ymax) = in_lyr.GetExtent()
+    bbox_list.append(xmin)
+    bbox_list.append(xmax)
+    bbox_list.append(ymin)
+    bbox_list.append(ymax)
+    return bbox_list
+
+
 # File conversion
 # geotiff_list, xres, yres = convert_hdf(proj_dir, dirs, hdf_filepath_list, hdf_file_list)
+poly_wkt = get_poly_wkt(geo_rca)
+bbox_list = get_bbox(geo_rca)
+mosaic_io_array = build_mosaic_io_array(geotiff_list, hdf_dates)
+modis_wkt = get_modis_wkt("steamm.py")
+vrt_list = convert_to_vrt(mosaic_io_array, swath_id, proj_dir, dir_list, modis_wkt)
+reprj_list = reproject_rasters(vrt_list, proj_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres, geo_rca)
+csv_list = LST_to_csv(reprj_list, proj_dir, dir_list)
+acq_date_list = build_acq_date_list(csv_list)
+LST_csv = build_interpl_table(acq_date_list, proj_dir, dir_list)
+print LST_csv

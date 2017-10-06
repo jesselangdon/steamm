@@ -22,10 +22,16 @@
 
 # Import modules
 import os
+import sys
 import shutil
-import gdal
-import gdalconst
-import lib.get_modis as gm
+# import gdal
+# import gdalconst
+
+tool_dir = os.path.normpath(os.path.dirname(__file__))
+sys.path.insert(0, tool_dir + '\externals\get_modis' )
+for path in sys.path:
+    print path
+import get_modis as gm
 
 # TODO remove CLI example text block
 '''
@@ -56,9 +62,9 @@ password = Jw-3i1970
 '''
 
 #CONSTANTS
-PLATFORM = 'MOLT'
-MODIS_PRODUCTS = {'Daily':'MOD11A1.005', '8-day':'MOD11A2.005'}
-
+PLATFORM = 'MOLT' # L
+#MODIS_PRODUCTS = {'Daily':'MOD11A1.005', '8-day':'MOD11A2.005'}
+MODIS_PRODUCTS = {'Daily':'MOD11A1.005'}
 
 def build_dir_list(project_dir, year_list, product_list):
     """Create a list of full directory paths for downloaded MODIS files."""
@@ -84,18 +90,19 @@ def make_dirs(dir_list):
 
 def download_hdf(product_list, year_list, swath_list, doy_start, doy_end, project_dir, username, password, proxy=None):
     """download HDF files for multiple years, using get_modis."""
-    for product in product_list:
+
+    for product in product_list.itervalues():
         for year in year_list:
             for swath in swath_list:
-                hdf_dir = """{}\{}\{}""".format(project_dir, product, year)
-                gm.get_modisfiles(PLATFORM, product, year, swath, proxy, username, password, doy_start, doy_end, hdf_dir )
+                hdf_dir = """{}\{}\{}""".format(project_dir, year, product)
+                gm.get_modisfiles(username, password, PLATFORM, product, year, swath, proxy, doy_start, doy_end)
             message = 'All HDF files downloaded for %d.' % (year)
             print message
     return hdf_dir
 
 
 def get_hdf_filepaths(hdf_dir):
-    """Get a list of HDF files downloaded by get_modis.py, which is be used for iterating through hdf file conversion."""
+    """Get a list of downloaded HDF files which is be used for iterating through hdf file conversion."""
     print "Building list of downloaded HDF files..."
     hdf_filename_list = []
     hdf_filepath_list = []
@@ -109,7 +116,7 @@ def get_hdf_filepaths(hdf_dir):
 
 
 def build_file_array(hdf_filename_list):
-    """Split HDF file names into array, allowing other functions to access the julian date values."""
+    """Split HDF file names into array, so other functions to access the julian date values."""
     print "Creating array based on HDF file names..."
     hdf_file_array = []
     for f in hdf_filename_list:
@@ -137,27 +144,20 @@ def find_dup_file_dates(hdf_date_list, swath_list):
     return sorted_dates
 
 
-def get_modis_wkt(steamm_script):
-    """Returns the filepath to the MODIS Sin WKT projection file"""
-    print "Finding the file path to the MODIS WKT projection file..."
-    steamm_path = os.path.abspath(steamm_script)
-    steamm_dir = os.path.dirname(steamm_path)
-    modis_wkt_filepath = os.path.join(steamm_dir, "MODIS_sin.wkt")
-    return modis_wkt_filepath
-
-
-# ------------------------------------------------ Main function as example -------------------------------------------------
-def main(proj_dir, data_product, process_yr_str, swath_id, doy_start_str, doy_end_str, username, password, platform = 'MOLT'):
-
-    # Temporary variable conversion
-    doy_start = int(doy_start_str)
-    doy_end = int(doy_end_str)
+# main function, to serve as example
+def main(proj_dir,
+         data_products,
+         process_yr_str,
+         swath_id,
+         doy_start_str,
+         doy_end_str,
+         username,
+         password):
 
     # Create download directories and download from HDF files from USGS server
-    #dir_hdf = '%s\\%s\\%s\\%s' % (proj_dir, dir_list[0], source_subdir_list[0], process_yr[0])
-    dirs = build_dir_list(proj_dir, data_product, process_yr)
+    dirs = build_dir_list(proj_dir, data_products, process_yr)
     make_dirs(dirs)
-    download_hdf(platform, data_product, process_yr, swath_id, doy_start, doy_end, data_dir, username, password)
+    download_hdf(MODIS_PRODUCTS, process_yr, swath_id, doy_start, doy_end, data_dir, username, password)
 
     hdf_filepath_list, hdf_file_list = get_hdf_filepaths(dirs)
     hdf_file_array = build_file_array(hdf_file_list)
@@ -167,20 +167,19 @@ def main(proj_dir, data_product, process_yr_str, swath_id, doy_start_str, doy_en
 
 # testing variables
 data_dir = r'C:\JL\Testing\STeAMM\test20160912'
-product_list = ['MOD11A1.005','MOD11A2.005']
 process_yr = [2015, 2016]
-swath_id = ['h09v05']
-doy_start_str = 1
-doy_end_str = 9
+swath_id = ['h09v04', 'h10v04']
+doy_start = 1
+doy_end = 9
 username = 'jesselangdon'
 password = 'Jw-3i1970'
 
 # call the main function, run the program
 if __name__ == '__main__':
     main(data_dir,
-         product_list,
+         MODIS_PRODUCTS,
          process_yr,
          swath_id,
-         doy_start_str,
-         doy_end_str,
+         doy_start,
+         doy_end,
          username, password)

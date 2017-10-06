@@ -28,9 +28,6 @@ from osgeo import ogr
 
 # Input variables
 
-# Drainage polygon shapefile to summarize values (i.e. watersheds, RCAs, etc.): ')
-geo_rca = ""
-
 # Stream network shapefile to which interpolated temperatures will be attached
 geo_strm = ""
 
@@ -108,54 +105,7 @@ def predict_create_year_folders(year_list, input_dir, dir_list, source_subdir_li
     for y in year_list:
         os.makedirs(os.path.join(subdir_hdf, str(y)))
     return
-# END move functions to utility module
 
-
-def convert_to_vrt(mosaic_io_array, swath_id, input_dir, dir_list, modis_wkt):
-    """Generates mosaics as GDAL VRT files for MODIS tiles collected on the same day."""
-    print "Generating GDAL VRT files from geotiffs..."
-    out_vrt_list = []
-    # iterate through list of geotiff file names
-    for row in mosaic_io_array:
-        if len(swath_id) > 1: # if more than one geotiff in list, mosaic into a vrt file
-            in_rasters = ' '.join(row[0:2])
-            out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[2], "vrt")
-            expr = 'gdalbuildvrt -a_srs %s %s %s' % (modis_wkt, out_vrt, in_rasters)
-        else: # otherwise, just convert the geotiff to a vrt file
-            out_vrt = '%s\\%s\\%s.%s' % (input_dir, dir_list[1], row[1], "vrt")
-            expr = 'gdal_translate -of %s -a_srs %s %s %s' % ("VRT", modis_wkt, row[0], out_vrt)
-        os.system(expr)
-        out_vrt_list.append(out_vrt)
-    return out_vrt_list
-
-# TODO move to utilities module
-def get_bbox(in_poly):
-    """Gets the extent envelope values of drainage polygons."""
-    print "Calculating the extent envelope vaues of drainage polygon dataset..."
-    bbox_list = []
-    in_driver = ogr.GetDriverByName("ESRI Shapefile")
-    in_ds = in_driver.Open(in_poly, 0)
-    in_lyr = in_ds.GetLayer()
-    (xmin, xmax, ymin, ymax) = in_lyr.GetExtent()
-    bbox_list.append(xmin)
-    bbox_list.append(xmax)
-    bbox_list.append(ymin)
-    bbox_list.append(ymax)
-    return bbox_list
-
-
-# TODO move to steamm module
-# File conversion
-poly_wkt = util.get_proj(geo_rca)
-bbox_list = util.get_bbox(geo_rca)
-mosaic_io_array = util.build_mosaic_io_array(geotiff_list, hdf_dates)
-modis_wkt = util.get_modis_wkt("steamm.py")
-vrt_list = util.convert_to_vrt(mosaic_io_array, swath_id, proj_dir, dir_list, modis_wkt)
-reprj_list = util.reproject_rasters(vrt_list, proj_dir, dir_list, modis_wkt, poly_wkt, bbox_list, xres, yres, geo_rca)
-csv_list = util.LST_to_csv(reprj_list, proj_dir, dir_list)
-acq_date_list = util.build_acq_date_list(csv_list)
-LST_csv = util.build_interpl_table(acq_date_list, proj_dir, dir_list)
-print LST_csv
 
 
 # TODO predict_temp module starts here ---------------------------------------------------------------------
